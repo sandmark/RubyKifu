@@ -9,13 +9,14 @@ task :default => [:spec]
 
 desc "Run all specs in spec directory"
 RSpec::Core::RakeTask.new(:spec => spec_prereq) do |t|
+  t.rspec_opts = ["-c --format documentation"]
   t.pattern = "spec/*_spec.rb"
 end
 
 namespace :spec do
   desc "Run all specs in spec directory with documentation format."
   RSpec::Core::RakeTask.new(:show => spec_prereq) do |t|
-    t.rspec_opts = ["--color --format documentation --backtrace"]
+    t.rspec_opts = ["-c --format documentation --backtrace"]
     t.pattern = "./spec/**/*_spec.rb"
   end
 
