@@ -7,6 +7,12 @@ spec_prereq = "spec:setup"
 desc "rake spec"
 task :default => [:spec]
 
+desc "Run all specs in spec directory with RCov"
+RSpec::Core::RakeTask.new(:rcov => spec_prereq) do |t|
+  t.rspec_opts = ["-c --format documentation"]
+  t.rcov = true
+end
+
 desc "Run all specs in spec directory"
 RSpec::Core::RakeTask.new(:spec => spec_prereq) do |t|
   t.rspec_opts = ["-c --format documentation"]
