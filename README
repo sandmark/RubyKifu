@@ -1,0 +1,22 @@
+== RubyKifuについて
+
+* 柿木形式の棋譜ファイルに対するAPIを提供するもの
+
+=== Kifu::Kifu
+* 主な機能
+  * Kifu.valid? で柿木形式かどうか確かめられる
+  * Kifu.same? で同じ棋譜かどうか確かめられる
+  * Kifu#merge(Kifuインスタンス) で棋譜の合成ができる (Kifu.same? が成立する場合のみ)
+  * Kifu#started_at で開始日時が読み出せる
+  * Kifu#kisen で棋戦情報、
+  * Kifu#teai で手合割、
+  * Kifu#sente で先手プレイヤの名前、
+  * Kifu#gote で後手プレイヤの名前
+  * などが返ってくる。（ほか足りないヘッダありましたらメッセージ残してください。）
+  * Kifu#[] で Sashite オブジェクトが返る
+
+== Kifu::Sashite
+* 主な機能
+  * 指した手（５六歩(57)など）を Sashite#te で読み出せる
+  * 消費時間も Sashite#clock に記憶している
+  * 指し手のコメントも Sashite#comment で読み出せる。無い場合は nil を返す。
