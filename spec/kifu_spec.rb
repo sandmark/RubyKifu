@@ -20,8 +20,6 @@ describe Kifu::Kifu do
         lambda {Kifu::Kifu.new(NKF.nkf('-w', File.read('invalid.kif')))}.
           should raise_error(RuntimeError)
       end
-
-      pending "棋譜は内部でUTF-8にエンコーディングされていること"
     end
   end
 
@@ -32,15 +30,49 @@ describe Kifu::Kifu do
       @sandmark = Kifu::Kifu.new @sandmark_kifu, "sandmark"
       @asanebou = Kifu::Kifu.new @asanebou_kifu, "asanebou"
       @started_at = DateTime.new(2010,12,11,23,31,33)
+      @sandmark_first = Kifu::Sashite.new "*あさねぼうさんとの対局ぱーと2！\r\n*先手番もらいました。ちなみに天下一将棋会ごっこも兼ねていたようです。\r\n   1 ５六歩(57)   ( 0:11/00:00:11)"
+    end
+
+    describe "Kifu#at: " do
+      it "0を一手目に、棋譜の指し手を参照できる" do
+        @sandmark.at(0).should be_an_instance_of(Kifu::Sashite)
+        @sandmark.at(0).te.should eq(@sandmark_first.te)
+      end
+
+      it "Kifu#[] にエイリアスされている" do
+        @sandmark[0].should be_an_instance_of(Kifu::Sashite)
+        @sandmark[0].te.should eq(@sandmark_first.te)
+      end
+    end
+
+    describe "Kifu#each: " do
+      it "一手目から投了、中断までブロックを繰り返す" do
+        result = []
+        @sandmark.each do |sashite|
+          result.push sashite.te
+        end
+        result.first.should eq("５六歩")
+        result.last.should  eq("投了")
+      end
+    end
+
+    describe "Kifu#each_with_index: " do
+      it "一手目から投了、中断まで、インデックス付きでブロックを繰り返す" do
+        result = {}
+        @sandmark.each_with_index do |sashite, index|
+          result[index] = sashite
+        end
+        result[4].te.should eq("７六歩")
+      end
     end
 
     describe "Kifu#same?: " do
-      pending "同じ棋譜なら（コメントやヘッダが違っても） true を返す" do
+      it "同じ棋譜なら（コメントやヘッダが違っても） true を返す" do
         @sandmark.same?(@asanebou).should be_true
       end
     end
 
-    describe "Kifu.strict_same?: " do
+    describe "Kifu#strict_same?: " do
       pending "より厳密なチェックを行う"
     end
 

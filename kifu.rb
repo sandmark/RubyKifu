@@ -29,15 +29,51 @@ module Kifu
       parse NKF.nkf('-w', kifu)
     end
 
+    # 10手目までで判断する（考慮時間や開始日時などは見ない）
+    def same? another
+      max = 9
+      each_with_index do |sashite, index|
+        if max < 0
+          return true
+        elsif not sashite.te == another[index].te
+          return false
+        end
+      end
+    end
+
+    def at pos
+      @body[pos]
+    end
+
+    def [] pos
+      at pos
+    end
+
+    def each &block
+      @body.each do |sashite|
+        block.call sashite
+      end
+    end
+
+    def each_with_index &block
+      @body.each_with_index do |sashite, index|
+        block.call sashite, index
+      end
+    end
+
     def to_s
       buffer = []
       buffer.push @headers.join("\n")
       buffer.push ValidKifuPattern
-
       buffer += @body.map{|sashite| sashite.to_s}
+      buffer += @footer
 
       # to_s するときは改行コードを CRLF に固定
       return buffer.join("\n").gsub(/\r/m, "").gsub(/\n/m, "\r\n")
+    end
+
+    def kifu
+      to_s
     end
 
     private
@@ -45,6 +81,7 @@ module Kifu
       @headers = []
       @attributes = {}
       @body = []
+      @footer = []
       queue = ""
 
       sashite_mode = false
@@ -74,8 +111,8 @@ module Kifu
             queue += line
             @body << Sashite.new(queue)
             queue = ""
-          else
-            @body << line
+          else # 指し手ゾーン終わり
+            @footer << line
           end
         end
       end
