@@ -161,7 +161,7 @@ module Kifu
   end
 
   class Sashite
-    attr_reader :comment, :tesuu, :te, :prev_te, :time_considered, :clock
+    attr_reader :tesuu, :te, :prev_te, :time_considered, :clock, :names
     SashitePattern = /^\s+?(\d+?)\s(.+?)(\(\d\d\))?\s+?\(\s(.*?)\)/
     CommentPattern = /^\*(.*)/
 
@@ -177,19 +177,25 @@ module Kifu
       comment?(line) or sashite?(line)
     end
 
-    def initialize text
+    def initialize text, name="no name"
+      @names = []
+      @names.push name
       @comment = []
       text.each_line do |line|
         if match = Sashite.comment?(line)
-          @comment << match[1].to_s
+          @comment << match[1].to_s.chomp
         elsif match = Sashite.sashite?(line)
           @tesuu = match[1].to_i
-          @te    = match[2]
-          @prev_te = match[3].match(/\d\d/)[0] if match[3]
-          @time_considered, @clock = match[4].split(/\//)
+          @te    = match[2].chomp
+          @prev_te = match[3].match(/\d\d/)[0].chomp if match[3]
+          @time_considered, @clock = match[4].chomp.split(/\//)
         end
       end
       @comment = @comment.join("\n")
+    end
+
+    def comment
+      @comment.gsub(/\n/, "\r\n")
     end
 
     def to_s
@@ -223,7 +229,7 @@ module Kifu
 
       time = "( " + @time_considered.to_s + "/" + @clock.to_s + ")"
       result += time
-      return result.chomp
+      return result.chomp.gsub(/\n/, "\r\n")
     end
   end
 end

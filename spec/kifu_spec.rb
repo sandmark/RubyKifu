@@ -178,10 +178,8 @@ describe Kifu::Sashite do
 
     describe "Sashite.new: " do
       before :each do
-        @normal = '   1 ５六歩(57)   ( 0:11/00:00:11)'
-        @commented = '*あさねぼうさんとの対局ぱーと2！
-*先手番もらいました。ちなみに天下一将棋会ごっこも兼ねていたようです。
-   1 ５六歩(57)   ( 0:11/00:00:11)'
+        @normal = "   1 ５六歩(57)   ( 0:11/00:00:11)"
+        @commented = "*あさねぼうさんとの対局ぱーと2！\r\n*先手番もらいました。ちなみに天下一将棋会ごっこも兼ねていたようです。\r\n   1 ５六歩(57)   ( 0:11/00:00:11)"
       end
 
       it "普通の指し手を記録できる" do
@@ -191,18 +189,21 @@ describe Kifu::Sashite do
       it "コメント付き指し手を記録できる" do
         Kifu::Sashite.new(@commented).should be_an_instance_of(Kifu::Sashite)
       end
+
+      it "「名前」を指定することができる" do
+        Kifu::Sashite.new(@normal, "sandmark").
+          should be_an_instance_of(Kifu::Sashite)
+      end
     end
   end
 
   describe "インスタンスメソッド: " do
     before :each do
-      @first = Kifu::Sashite.new "*あさねぼうさんとの対局ぱーと2！\r\n*先手番もらいました。ちなみに天下一将棋会ごっこも兼ねていたようです。
-   1 ５六歩(57)   ( 0:11/00:00:11)"
-      @second = Kifu::Sashite.new "   2 ５四歩(53)   ( 0:22/00:00:22)"
+      @first = Kifu::Sashite.new "*あさねぼうさんとの対局ぱーと2！\r\n*先手番もらいました。ちなみに天下一将棋会ごっこも兼ねていたようです。\r\n   1 ５六歩(57)   ( 0:11/00:00:11)", "sandmark"
+      @second = Kifu::Sashite.new "   2 ５四歩(53)   ( 0:22/00:00:22)", "sandmark"
       @thirty_seven = Kifu::Sashite.new "  37 ３二銀成(41) ( 0:05/00:01:38)"
 
-      @first_raw = "*あさねぼうさんとの対局ぱーと2！\r\n*先手番もらいました。ちなみに天下一将棋会ごっこも兼ねていたようです。
-   1 ５六歩(57)   ( 0:11/00:00:11)"
+      @first_raw = "*あさねぼうさんとの対局ぱーと2！\r\n*先手番もらいました。ちなみに天下一将棋会ごっこも兼ねていたようです。\r\n   1 ５六歩(57)   ( 0:11/00:00:11)"
       @second_raw = "   2 ５四歩(53)   ( 0:22/00:00:22)"
       @thirty_seven_raw = "  37 ３二銀成(41) ( 0:05/00:01:38)"
     end
@@ -284,6 +285,23 @@ describe Kifu::Sashite do
       it "書き込みはできない" do
         lambda {@first. time_considered = "hoge"}.should raise_error
         lambda {@second.time_considered = "fuga"}.should raise_error
+      end
+    end
+
+    describe "Sashite#names: " do
+      it "名前を複数保有している" do
+        @sandmark.names.should be_an_instance_of(Array)
+        @sandmark.names.first.should eq("sandmark")
+      end
+
+      it "書き込みはできない" do
+        lambda{@sandmark.names.push("hoge")}.should raise_error
+      end
+    end
+
+    describe "Sashite#name: " do
+      it "オブジェクト生成時の名前を参照することができる" do
+        @sandmark.name.should eq("sandmark")
       end
     end
   end
