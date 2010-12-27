@@ -73,12 +73,45 @@ describe Kifu::Kifu do
     end
 
     describe "Kifu#strict_same?: " do
-      pending "より厳密なチェックを行う"
+      it "まったく同じ棋譜でなければ true を返さない" do
+        @sandmark.strict_same?(@asanebou).should be_false
+        @sandmark.strict_same?(@sandmark).should be_true
+      end
     end
 
     describe "Kifu#started_at: " do
-      pending "開始日時を返す" do
+      it "開始日時を返す" do
         @sandmark.started_at.should eq(@started_at)
+      end
+    end
+
+    describe "Kifu#kisen: " do
+      it "棋戦情報を返す" do
+        @sandmark.kisen.should eq("レーティング対局室")
+      end
+    end
+
+    describe "Kifu#teai: " do
+      it "手合割を返す" do
+        @sandmark.teai.should eq("平手")
+      end
+    end
+
+    describe "Kifu#sente: " do
+      it "先手の名前を返す" do
+        @sandmark.sente.should eq("sandmark")
+      end
+    end
+
+    describe "Kifu#gote: " do
+      it "後手の名前を返す" do
+        @sandmark.gote.should eq("asanebou")
+      end
+    end
+
+    describe "Kifu#header: " do
+      it "Kifu for Windows によって生成されたヘッダを返す" do
+        @sandmark.header.should eq("# --- Kifu for Windows V6.32 棋譜ファイル ---")
       end
     end
 

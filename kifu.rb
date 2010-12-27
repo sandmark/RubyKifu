@@ -29,18 +29,55 @@ module Kifu
       parse NKF.nkf('-w', kifu)
     end
 
-    # 10手目までで判断する（考慮時間や開始日時などは見ない）
+    def started_at
+      @attributes[:started_at]
+    end
+
     def same? another
-      max = 9
       each_with_index do |sashite, index|
-        if max < 0
-          return true
-        elsif not sashite.te == another[index].te
+        return false if not sashite.te == another[index].te
+      end
+      return true
+    end
+
+    def strict_same? another
+      if (header     != another.header     or
+          started_at != another.started_at or
+          kisen      != another.kisen      or
+          teai       != another.teai       or
+          sente      != another.sente      or
+          gote       != another.gote)
+        return false
+      end
+
+      each_with_index do |sashite, index|
+        if (sashite.te      != another[index].te or
+            sashite.comment != another[index].comment)
           return false
         end
       end
     end
 
+    def header
+      @attributes[:header]
+    end
+
+    def teai
+      @attributes[:teai]
+    end
+
+    def sente
+      @attributes[:sente]
+    end
+
+    def gote
+      @attributes[:gote]
+    end
+
+    def kisen
+      @attributes[:kisen]
+    end
+  
     def at pos
       @body[pos]
     end
@@ -88,15 +125,15 @@ module Kifu
       kifu.each_line do |line|
         if not sashite_mode and line.match HeaderPattern
           @headers << line.chomp
-          @attributes[:header] = line.chomp
+          @attributes[:header] = line.strip
 
         elsif not sashite_mode and not line.match SplitPattern # まだヘッダ部分
           @headers << line.chomp
-          key, value = line.chomp.split(/：/)
+          key, value = line.split(/：/)
           if key == "開始日時"
             @attributes[:started_at] = DateTime.parse value
           else
-            @attributes[KifuHeaders[key]] = value
+            @attributes[KifuHeaders[key]] = zenkaku_strip(value.to_s)
           end
 
         else # 指し手突入
@@ -116,6 +153,10 @@ module Kifu
           end
         end
       end
+    end
+
+    def zenkaku_strip string
+      string.strip.gsub(/　+$/, '')
     end
   end
 
