@@ -29,22 +29,36 @@ module Kifu
       parse NKF.nkf('-w', kifu)
     end
 
+    def to_s
+      buffer = ""
+      @headers.each do |key, value|
+        if key == :header
+          buffer += value + "\n"
+        else
+          buffer += "#{key}：#{value}\n"
+        end
+      end
+      buffer.chomp!
+
+      @body
+    end
+
     private
     def parse kifu
-      @header = {}
+      @headers = {}
       @body = []
       queue = ""
 
       kifu.each_line do |line|
         if line.match HeaderPattern
-          @header[:header] = line
+          @headers[:header] = line
 
         elsif not line.match SplitPattern # まだヘッダ部分
           key, value = line.split(/：/)
           if key == "開始日時"
-            @header[:started_at] = DateTime.parse value
+            @headers[:started_at] = DateTime.parse value
           else
-            @header[KifuHeaders[key]] = value
+            @headers[KifuHeaders[key]] = value
           end
 
         else # 指し手突入
@@ -86,6 +100,23 @@ module Kifu
         end
       end
       @comment = @comment.join("\n")
+    end
+
+    def to_s
+      result = ""
+      if commented?
+        result += @comment.split(/\n/).map{|l| '*'+l}.join("\n") + "\n"
+      end
+      result += sprintf("%4d", self.tesuu) + " " +
+        self.te +
+        "(" + self.prev_te + ")" + "   ( " +
+        self.time_considered + "/" +
+        self.clock + ")"
+      return result
+    end
+
+    def commented?
+      not @comment.empty?
     end
   end
 end

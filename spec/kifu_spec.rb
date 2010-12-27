@@ -31,17 +31,12 @@ describe Kifu::Kifu do
         Kifu::Kifu.new(NKF.nkf('-w', File.read('sandmark.kif')), "sandmark")
       @asanebou =
         Kifu::Kifu.new(NKF.nkf('-w', File.read('asanebou.kif')), "asanebou")
-      @invalid  = Kifu::Kifu.new(NKF.nkf('-w', File.read('invalid.kif')))
       @started_at = DateTime.new(2010,12,11,23,31,33)
     end
 
     describe "Kifu#same?: " do
       pending "同じ棋譜なら（コメントやヘッダが違っても） true を返す" do
         @sandmark.same?(@asanebou).should be_true
-      end
-
-      pending "Kifu.valid? を通すこと: " do
-        @sandmark.same?(@invalid).should be_false
       end
     end
 
@@ -52,6 +47,12 @@ describe Kifu::Kifu do
     describe "Kifu#started_at: " do
       pending "開始日時を返す" do
         @sandmark.started_at.should eq(@started_at)
+      end
+    end
+
+    describe "Kifu#to_s: " do
+      it "読み込んだ棋譜をUTF-8形式で返す" do
+        NKF.guess(@sandmark.to_s).should be(NKF::UTF8)
       end
     end
   end
@@ -108,6 +109,28 @@ describe Kifu::Sashite do
 *先手番もらいました。ちなみに天下一将棋会ごっこも兼ねていたようです。
    1 ５六歩(57)   ( 0:11/00:00:11)"
       @second = Kifu::Sashite.new "   2 ５四歩(53)   ( 0:22/00:00:22)"
+
+      @first_raw = "*あさねぼうさんとの対局ぱーと2！
+*先手番もらいました。ちなみに天下一将棋会ごっこも兼ねていたようです。
+   1 ５六歩(57)   ( 0:11/00:00:11)"
+      @second_raw = "   2 ５四歩(53)   ( 0:22/00:00:22)"
+    end
+
+    describe "Sashite#to_s: " do
+      it "指し手を柿木棋譜形式にして返す" do
+        @first.to_s.should eq(@first_raw)
+        @second.to_s.should eq(@second_raw)
+      end
+    end
+
+    describe "Sashite#commented?" do
+      it "コメントされている指し手なら true を返す" do
+        @first.commented?.should be_true
+      end
+
+      it "コメントされていない指し手なら false を返す" do
+        @second.commented?.should be_false
+      end
     end
 
     describe "Sashite#comment: " do
