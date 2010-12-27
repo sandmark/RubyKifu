@@ -103,9 +103,24 @@ module Kifu
     end
 
     def to_s
+      _to_s true
+    end
+
+    def to_s_without_comment
+      _to_s
+    end
+
+    def commented?
+      not @comment.empty?
+    end
+
+    private
+    def _to_s with_comment=nil
       result = ""
-      if commented?
-        result += @comment.split(/\n/).map{|l| '*'+l}.join("\n") + "\n"
+      if with_comment
+        if commented?
+          result += @comment.split(/\n/).map{|l| '*'+l}.join("\n") + "\n"
+        end
       end
       result += sprintf("%4d", self.tesuu) + " " +
         self.te +
@@ -113,10 +128,6 @@ module Kifu
         self.time_considered + "/" +
         self.clock + ")"
       return result
-    end
-
-    def commented?
-      not @comment.empty?
     end
   end
 end

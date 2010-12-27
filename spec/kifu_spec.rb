@@ -123,6 +123,13 @@ describe Kifu::Sashite do
       end
     end
 
+    describe "Sashite#to_s_without_comment" do
+      it "指し手をコメント無しで返す" do
+        @first.to_s_without_comment.should eq("   1 ５六歩(57)   ( 0:11/00:00:11)")
+        @second.to_s_without_comment.should eq(@second_raw)
+      end
+    end
+
     describe "Sashite#commented?" do
       it "コメントされている指し手なら true を返す" do
         @first.commented?.should be_true
