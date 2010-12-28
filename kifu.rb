@@ -103,17 +103,16 @@ module Kifu
       buffer.push @headers.join("\n")
       buffer.push ValidKifuPattern
       buffer += @body.map{|sashite| sashite.to_s}
-      buffer += @footer
+      buffer.push @footer.to_s
 
       # to_s するときは改行コードを CRLF に固定
-      return buffer.join("\n").gsub(/\r/m, "").gsub(/\n/m, "\r\n")
+      return buffer.join("\n").gsub(/\r/m, "").gsub(/\n/m, "\r\n") + "\r\n"
     end
 
     def kifu
       to_s
     end
 
-    private
     def parse kifu
       @headers = []
       @attributes = {}
@@ -148,8 +147,9 @@ module Kifu
             queue += line
             @body << Sashite.new(queue)
             queue = ""
-          else # 指し手ゾーン終わり
-            @footer << line
+          elsif Sashite.footer?(line)
+            queue += line
+            @footer = Sashite.new(queue)
           end
         end
       end
@@ -158,12 +158,15 @@ module Kifu
     def zenkaku_strip string
       string.strip.gsub(/　+$/, '')
     end
+
+    private :parse, :zenkaku_strip
   end
 
   class Sashite
     attr_reader :tesuu, :te, :prev_te, :time_considered, :clock
     SashitePattern = /^\s+?(\d+?)\s(.+?)(\(\d\d\))?\s+?\(\s(.*?)\)/
     CommentPattern = /^\*(.*)/
+    ToryoPattern   = /^まで.*/
 
     def self.sashite? line
       line.to_s.match SashitePattern
@@ -177,6 +180,10 @@ module Kifu
       comment?(line) or sashite?(line)
     end
 
+    def self.footer? line
+      line.to_s.match ToryoPattern
+    end
+
     def initialize text, name="no name", args={}
       if args.empty?
         @names = []
@@ -186,6 +193,8 @@ module Kifu
         text.each_line do |line|
           if match = Sashite.comment?(line)
             @comment << match[1].to_s.chomp
+          elsif match = Sashite.footer?(line)
+            @footer = match[0]
           elsif match = Sashite.sashite?(line)
             @tesuu = match[1].to_i
             @te    = match[2].chomp
@@ -206,6 +215,10 @@ module Kifu
       end
     end
 
+    def footer?
+      true if @footer
+    end
+
     def names
       @names.dup.freeze
     end
@@ -222,6 +235,10 @@ module Kifu
                     :prev_te => @prev_te,
                     :time_considered => @time_considered,
                     :clock   => @clock})
+    end
+
+    def & another
+      merge another
     end
 
     def comments_with_names
@@ -276,6 +293,12 @@ module Kifu
           result += @comment.split(/\n/).map{|l| '*'+l}.join("\n") + "\n"
         end
       end
+
+      if footer?
+        result += @footer
+        return crlfize result
+      end
+
       result += sprintf("%4d", @tesuu) + " "
 
       te  = @te.to_s
@@ -287,7 +310,7 @@ module Kifu
 
       time = "( " + @time_considered.to_s + "/" + @clock.to_s + ")"
       result += time
-      return result.chomp.gsub(/\n/, "\r\n")
+      return crlfize result
     end
 
     private :_to_s, :crlfize, :comments_with_names_within

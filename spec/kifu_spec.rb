@@ -122,6 +122,13 @@ describe Kifu::Kifu do
 
       it "読み込んだ棋譜と同一のものを返す" do
         @sandmark.to_s.should eq(@sandmark_kifu)
+        @asanebou.to_s.should eq(@asanebou_kifu)
+      end
+    end
+
+    describe "マージ関連: " do
+      describe "Kifu#merge: " do
+        pending "棋譜を合成し、新たな棋譜オブジェクトを返す"
       end
     end
   end
@@ -132,7 +139,7 @@ describe Kifu::Sashite do
     before :each do
       @sashite = '   1 ５六歩(57)   ( 0:11/00:00:11)'
       @comment = '*あさねぼうさんとの対局ぱーと2！'
-      @toryo   = "まで76手で後手の勝ち"
+      @footer   = "まで76手で後手の勝ち"
     end
 
     describe "Sashite.sashite?: " do
@@ -165,6 +172,22 @@ describe Kifu::Sashite do
       end
     end
 
+    describe "Sashite.footer?: " do
+      it "「までxxx手でXXの勝ち」などなら MatchData オブジェクトを返す" do
+        Kifu::Sashite.footer?(@footer).should be_true
+        Kifu::Sashite.footer?(@footer).should be_an_instance_of(MatchData)
+      end
+
+      it "それ以外には false を返す" do
+        Kifu::Sashite.footer?(@comment).should be_false
+        Kifu::Sashite.footer?(@sashite).should be_false
+      end
+
+      it "to_s すること" do
+        Kifu::Sashite.footer?(nil).should be_false
+      end
+    end
+
     describe "Sashite.comment_or_sashite?: " do
       it "コメント・指し手のどちらかなら true を返す" do
         Kifu::Sashite.comment_or_sashite?(@comment).should be_true
@@ -172,7 +195,11 @@ describe Kifu::Sashite do
       end
 
       it "コメントでも指し手でもなければ false を返す" do
-        Kifu::Sashite.comment_or_sashite?(@toryo).should be_false
+        Kifu::Sashite.comment_or_sashite?(@footer).should be_false
+      end
+
+      it "to_s すること" do
+        Kifu::Sashite.comment_or_sashite?(nil).should be_false
       end
     end
 
@@ -180,6 +207,7 @@ describe Kifu::Sashite do
       before :each do
         @normal = "   1 ５六歩(57)   ( 0:11/00:00:11)"
         @commented = "*あさねぼうさんとの対局ぱーと2！\r\n*先手番もらいました。ちなみに天下一将棋会ごっこも兼ねていたようです。\r\n   1 ５六歩(57)   ( 0:11/00:00:11)"
+        @footer = "*これで投了となりました。\r\n*\r\n*本局は４３手目の４５桂が、さんどさんの悪手であったと思います。\r\n*あそこで５５金と角を取られていたら、おそらくこちらの負けでした。\r\n*\r\n*幸運があり、勝負に勝つことができました。\r\n*さんどさんありがとうございました！\r\n*\r\n*また対戦しましょうね！\r\nまで76手で後手の勝ち"
 
         @names = ["sandmark", "asanebou"]
         @comments = ["あさねぼうさんとの対局ぱーと2！", "さんどさんと対戦だ！"]
@@ -205,6 +233,10 @@ describe Kifu::Sashite do
 
       it "コメント付き指し手を記録できる" do
         Kifu::Sashite.new(@commented).should be_an_instance_of(Kifu::Sashite)
+      end
+
+      it "フッタを記録できる" do
+        Kifu::Sashite.new(@footer).should be_an_instance_of(Kifu::Sashite)
       end
 
       it "「名前」を指定することができる" do
@@ -247,6 +279,9 @@ describe Kifu::Sashite do
       @first_raw = "*あさねぼうさんとの対局ぱーと2！\r\n*先手番もらいました。ちなみに天下一将棋会ごっこも兼ねていたようです。\r\n   1 ５六歩(57)   ( 0:11/00:00:11)"
       @second_raw = "   2 ５四歩(53)   ( 0:22/00:00:22)"
       @thirty_seven_raw = "  37 ３二銀成(41) ( 0:05/00:01:38)"
+
+      @footer_raw = "*これで投了となりました。\r\n*\r\n*本局は４３手目の４５桂が、さんどさんの悪手であったと思います。\r\n*あそこで５５金と角を取られていたら、おそらくこちらの負けでした。\r\n*\r\n*幸運があり、勝負に勝つことができました。\r\n*さんどさんありがとうございました！\r\n*\r\n*また対戦しましょうね！\r\nまで76手で後手の勝ち"
+      @footer = Kifu::Sashite.new @footer_raw
     end
 
     describe "Sashite#to_s: " do
@@ -254,6 +289,7 @@ describe Kifu::Sashite do
         @first.to_s.should eq(@first_raw)
         @second.to_s.should eq(@second_raw)
         @thirty_seven.to_s.should eq(@thirty_seven_raw)
+        @footer.to_s.should eq(@footer_raw)
       end
     end
 
@@ -262,6 +298,8 @@ describe Kifu::Sashite do
         @first.to_s_without_comment.should eq("   1 ５六歩(57)   ( 0:11/00:00:11)")
         @second.to_s_without_comment.should eq(@second_raw)
         @thirty_seven.to_s_without_comment.should eq(@thirty_seven_raw)
+
+        @footer.to_s_without_comment.should eq("まで76手で後手の勝ち")
       end
     end
 
@@ -275,9 +313,18 @@ describe Kifu::Sashite do
       end
     end
 
+    describe "Sashite#footer?: " do
+      it "自身がフッタなら true を返す" do
+        @footer = Kifu::Sashite.new @footer_raw
+        @footer.footer?.should be_true
+      end
+    end
+
     describe "Sashite#comment: " do
       it "コメントを参照できる" do
         @first.comment.should eq("あさねぼうさんとの対局ぱーと2！\r\n先手番もらいました。ちなみに天下一将棋会ごっこも兼ねていたようです。")
+        @footer = Kifu::Sashite.new @footer_raw
+        @footer.comment.should eq("これで投了となりました。\r\n\r\n本局は４３手目の４５桂が、さんどさんの悪手であったと思います。\r\nあそこで５５金と角を取られていたら、おそらくこちらの負けでした。\r\n\r\n幸運があり、勝負に勝つことができました。\r\nさんどさんありがとうございました！\r\n\r\nまた対戦しましょうね！")
       end
 
       it "書き込みはできない" do
@@ -376,6 +423,10 @@ describe Kifu::Sashite do
         it "呼び出し元の名前、順番が優先される" do
           @merged_twice.names[2].should eq("merge")
           @merged_twice.comments[2].should eq(@merge1_comment)
+        end
+
+        it "& で呼び出せる" do
+          (@sandmark1 & @asanebou1).should be_an_instance_of(Kifu::Sashite)
         end
       end
 
