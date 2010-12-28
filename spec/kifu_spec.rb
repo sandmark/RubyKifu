@@ -180,6 +180,23 @@ describe Kifu::Sashite do
       before :each do
         @normal = "   1 ５六歩(57)   ( 0:11/00:00:11)"
         @commented = "*あさねぼうさんとの対局ぱーと2！\r\n*先手番もらいました。ちなみに天下一将棋会ごっこも兼ねていたようです。\r\n   1 ５六歩(57)   ( 0:11/00:00:11)"
+
+        @names = ["sandmark", "asanebou"]
+        @comments = ["あさねぼうさんとの対局ぱーと2！", "さんどさんと対戦だ！"]
+        @tesuu = 1
+        @te = "５六歩"
+        @prev_te = "57"
+        @time_considered = "0:11"
+        @clock = "00:00:11"
+        @args_specified =
+          Kifu::Sashite.new(nil, nil, {
+                              :names => @names,
+                              :comments => @comments,
+                              :tesuu => @tesuu,
+                              :te => @te,
+                              :prev_te => @prev_te,
+                              :time_considered => @time_considered,
+                              :clock => @clock})
       end
 
       it "普通の指し手を記録できる" do
@@ -193,6 +210,30 @@ describe Kifu::Sashite do
       it "「名前」を指定することができる" do
         Kifu::Sashite.new(@normal, "sandmark").
           should be_an_instance_of(Kifu::Sashite)
+      end
+
+      it "指し手を指定することができる" do
+        @args_specified.te.should eq(@te)
+      end
+
+      it "コメントを複数指定できる" do
+        @args_specified.comments.should eq(@comments)
+      end
+
+      it "手数を指定できる" do
+        @args_specified.tesuu.should eq(@tesuu)
+      end
+
+      it "前の位置を指定できる" do
+        @args_specified.prev_te.should eq(@prev_te)
+      end
+
+      it "消費時間を指定できる" do
+        @args_specified.time_considered.should eq(@time_considered)
+      end
+
+      it "総消費時間を指定できる" do
+        @args_specified.clock.should eq(@clock)
       end
     end
   end
@@ -288,20 +329,81 @@ describe Kifu::Sashite do
       end
     end
 
-    describe "Sashite#names: " do
-      it "名前を複数保有している" do
-        @sandmark.names.should be_an_instance_of(Array)
-        @sandmark.names.first.should eq("sandmark")
+    describe "マージ関連: " do
+      before :each do
+        @sandmark1_raw = "*あさねぼうさんとの対局ぱーと2！\r\n*先手番もらいました。ちなみに天下一将棋会ごっこも兼ねていたようです。\r\n   1 ５六歩(57)   ( 0:11/00:00:11)"
+        @asanebou1_raw = "*さんどさんと対戦だ！\r\n*先手を取られてしまったので、たぶん中飛車でありましょう。\r\n   1 ５六歩(57)   ( 0:11/00:00:11)"
+        @merge1_raw = "*マージできているかどうかのテストです。\r\n*名前付けがダブらないように。\r\n   1 ５六歩(57)   ( 0:11/00:00:11)"
+        @merge1_comment = "マージできているかどうかのテストです。\r\n名前付けがダブらないように。"
+        @merge1_named_comment = "merge: マージできているかどうかのテストです。\r\nmerge: 名前付けがダブらないように。"
+
+        @sandmark1 = Kifu::Sashite.new @sandmark1_raw, "sandmark"
+        @asanebou1 = Kifu::Sashite.new @asanebou1_raw, "asanebou"
+        @merge1    = Kifu::Sashite.new @merge1_raw,    "merge"
+
+        @merged = @sandmark1.merge(@asanebou1)
+        @merged_twice = @merged.merge(@merge1)
       end
 
-      it "書き込みはできない" do
-        lambda{@sandmark.names.push("hoge")}.should raise_error
-      end
-    end
+      describe "Sashite#names: " do
+        it "名前を複数保有している" do
+          @first.names.should be_an_instance_of(Array)
+          @first.names.first.should eq("sandmark")
+        end
 
-    describe "Sashite#name: " do
-      it "オブジェクト生成時の名前を参照することができる" do
-        @sandmark.name.should eq("sandmark")
+        it "書き込みはできない" do
+          lambda{@first.names.push("hoge")}.should raise_error
+        end
+      end
+
+      describe "Sashite#name: " do
+        it "オブジェクト生成時の名前を参照することができる" do
+          @first.name.should eq("sandmark")
+          @merged_twice.name.should eq("sandmark")
+        end
+      end
+
+      describe "Sashite#merge: " do
+        it "他の指し手と融合することができる" do
+          @merged.should be_an_instance_of(Kifu::Sashite)
+          @merged_twice.should be_an_instance_of(Kifu::Sashite)
+        end
+
+        it "名前リストに引数の指し手の名前が入る" do
+          @merged.names[1].should eq("asanebou")
+        end
+
+        it "呼び出し元の名前、順番が優先される" do
+          @merged_twice.names[2].should eq("merge")
+          @merged_twice.comments[2].should eq(@merge1_comment)
+        end
+      end
+
+      describe "Sashite#comments: " do
+        it "コメントの配列が返る" do
+          @merged.comments.should be_an_instance_of(Array)
+          @merged.comments.should eq(["あさねぼうさんとの対局ぱーと2！\r\n先手番もらいました。ちなみに天下一将棋会ごっこも兼ねていたようです。", "さんどさんと対戦だ！\r\n先手を取られてしまったので、たぶん中飛車でありましょう。"])
+          @merged_twice.comments.should be_an_instance_of(Array)
+          @merged_twice.comments.should eq(["あさねぼうさんとの対局ぱーと2！\r\n先手番もらいました。ちなみに天下一将棋会ごっこも兼ねていたようです。", "さんどさんと対戦だ！\r\n先手を取られてしまったので、たぶん中飛車でありましょう。", @merge1_comment])
+        end
+      end
+
+      describe "Sashite#comments_with_names: " do
+        it "名前付きでコメントの配列を返す" do
+          @merged.comments_with_names.
+            should eq(["sandmark: あさねぼうさんとの対局ぱーと2！\r\nsandmark: 先手番もらいました。ちなみに天下一将棋会ごっこも兼ねていたようです。", "asanebou: さんどさんと対戦だ！\r\nasanebou: 先手を取られてしまったので、たぶん中飛車でありましょう。"])
+          @merged_twice.comments_with_names.
+            should eq(["sandmark: あさねぼうさんとの対局ぱーと2！\r\nsandmark: 先手番もらいました。ちなみに天下一将棋会ごっこも兼ねていたようです。", "asanebou: さんどさんと対戦だ！\r\nasanebou: 先手を取られてしまったので、たぶん中飛車でありましょう。", @merge1_named_comment])
+        end
+      end
+
+      describe "Sashite#comment_with_name: " do
+        it "各行に名前付きでコメントを返す" do
+          @sandmark1.comment_with_name.
+            should eq("sandmark: あさねぼうさんとの対局ぱーと2！\r\nsandmark: 先手番もらいました。ちなみに天下一将棋会ごっこも兼ねていたようです。")
+          @asanebou1.comment_with_name.
+            should eq("asanebou: さんどさんと対戦だ！\r\nasanebou: 先手を取られてしまったので、たぶん中飛車でありましょう。")
+        end
       end
     end
   end

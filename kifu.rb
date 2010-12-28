@@ -161,7 +161,7 @@ module Kifu
   end
 
   class Sashite
-    attr_reader :tesuu, :te, :prev_te, :time_considered, :clock, :names
+    attr_reader :tesuu, :te, :prev_te, :time_considered, :clock
     SashitePattern = /^\s+?(\d+?)\s(.+?)(\(\d\d\))?\s+?\(\s(.*?)\)/
     CommentPattern = /^\*(.*)/
 
@@ -177,25 +177,84 @@ module Kifu
       comment?(line) or sashite?(line)
     end
 
-    def initialize text, name="no name"
-      @names = []
-      @names.push name
-      @comment = []
-      text.each_line do |line|
-        if match = Sashite.comment?(line)
-          @comment << match[1].to_s.chomp
-        elsif match = Sashite.sashite?(line)
-          @tesuu = match[1].to_i
-          @te    = match[2].chomp
-          @prev_te = match[3].match(/\d\d/)[0].chomp if match[3]
-          @time_considered, @clock = match[4].chomp.split(/\//)
+    def initialize text, name="no name", args={}
+      if args.empty?
+        @names = []
+        @comments = []
+        @names.push name
+        @comment = []
+        text.each_line do |line|
+          if match = Sashite.comment?(line)
+            @comment << match[1].to_s.chomp
+          elsif match = Sashite.sashite?(line)
+            @tesuu = match[1].to_i
+            @te    = match[2].chomp
+            @prev_te = match[3].match(/\d\d/)[0].chomp if match[3]
+            @time_considered, @clock = match[4].chomp.split(/\//)
+          end
         end
+        @comment = @comment.join("\n")
+        @comments.push @comment
+      else # args 処理
+        @names           = args[:names]
+        @comments        = args[:comments].map{|c| c.gsub(/\r/, "")}
+        @tesuu           = args[:tesuu]
+        @te              = args[:te]
+        @prev_te         = args[:prev_te]
+        @time_considered = args[:time_considered]
+        @clock           = args[:clock]
       end
-      @comment = @comment.join("\n")
+    end
+
+    def names
+      @names.dup.freeze
+    end
+
+    def name
+      @names.first
+    end
+
+    def merge another
+      Sashite.new(nil, nil, {
+                    :names   => @names + another.names,
+                    :comments => @comments + another.comments,
+                    :tesuu   => @tesuu,   :te       => @te,
+                    :prev_te => @prev_te,
+                    :time_considered => @time_considered,
+                    :clock   => @clock})
+    end
+
+    def comments_with_names
+      comments_with_names_within(0..-1)
+    end
+
+    def comments
+      @comments.map{|c| crlfize c}
+    end
+
+    def comment_with_name
+      comments_with_names_within(0..0).first
+    end
+
+    def comments_with_names_within range
+      result = []
+      queue = ""
+      @comments[range].each_with_index do |comment, index|
+        comment.each_line do |line|
+          queue += "#{@names[index]}: #{line}"
+        end
+        result.push queue
+        queue = ""
+      end
+      result.map{|c| crlfize c}
     end
 
     def comment
-      @comment.gsub(/\n/, "\r\n")
+      crlfize @comments.first
+    end
+
+    def crlfize string
+      string.gsub(/\n/m, "\r\n")
     end
 
     def to_s
@@ -210,7 +269,6 @@ module Kifu
       not @comment.empty?
     end
 
-    private
     def _to_s with_comment=nil
       result = ""
       if with_comment
@@ -231,6 +289,8 @@ module Kifu
       result += time
       return result.chomp.gsub(/\n/, "\r\n")
     end
+
+    private :_to_s, :crlfize, :comments_with_names_within
   end
 end
 
