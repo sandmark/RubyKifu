@@ -456,6 +456,36 @@ describe Kifu::Sashite do
             should eq("asanebou: さんどさんと対戦だ！\r\nasanebou: 先手を取られてしまったので、たぶん中飛車でありましょう。")
         end
       end
+
+      describe "フッタ関連: " do
+        before :each do
+          @footer_sandmark = Kifu::Sashite.new "まで76手で後手の勝ち", "sandmark"
+          @footer_asanebou = Kifu::Sashite.new "*これで投了となりました。\r\n*\r\n*本局は４３手目の４５桂が、さんどさんの悪手であったと思います。\r\n*あそこで５５金と角を取られていたら、おそらくこちらの負けでした。\r\n*\r\n*幸運があり、勝負に勝つことができました。\r\n*さんどさんありがとうございました！\r\n*\r\n*また対戦しましょうね！\r\nまで76手で後手の勝ち", "asanebou"
+          @footer_merged = @footer_sandmark & @footer_asanebou
+
+          @comment_sandmark = ""
+          @comment_asanebou = "これで投了となりました。\r\n\r\n本局は４３手目の４５桂が、さんどさんの悪手であったと思います。\r\nあそこで５５金と角を取られていたら、おそらくこちらの負けでした。\r\n\r\n幸運があり、勝負に勝つことができました。\r\nさんどさんありがとうございました！\r\n\r\nまた対戦しましょうね！"
+
+          @comment_with_name_of_sandmark = ""
+          @comment_with_name_of_asanebou = "asanebou: これで投了となりました。\r\nasanebou: \r\nasanebou: 本局は４３手目の４５桂が、さんどさんの悪手であったと思います。\r\nasanebou: あそこで５５金と角を取られていたら、おそらくこちらの負けでした。\r\nasanebou: \r\nasanebou: 幸運があり、勝負に勝つことができました。\r\nasanebou: さんどさんありがとうございました！\r\nasanebou: \r\nasanebou: また対戦しましょうね！"
+        end
+
+        describe "Sashite#comments" do
+          it "コメントが保持されていること" do
+            @footer_merged.comments[0].should eq(@comment_sandmark)
+            @footer_merged.comments[1].should eq(@comment_asanebou)
+          end
+        end
+
+        describe "Sashite#comments_with_names" do
+          it "名前付きコメントが保持されていること" do
+            @footer_merged.comments_with_names[0].
+              should eq(@comment_with_name_of_sandmark)
+            @footer_merged.comments_with_names[1].
+              should eq(@comment_with_name_of_asanebou)
+          end
+        end
+      end
     end
   end
 end
