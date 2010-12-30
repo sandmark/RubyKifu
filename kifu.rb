@@ -60,6 +60,10 @@ module Kifu
       Kifu.new nil, self.name, headers, attributes, body, footer
     end
 
+    def & another
+      merge another
+    end
+
     def started_at
       @attributes[:started_at]
     end

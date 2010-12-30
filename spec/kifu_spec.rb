@@ -156,6 +156,10 @@ describe Kifu::Kifu do
           end
         end
 
+        it "& にエイリアスされている" do
+          (@sandmark & @asanebou).should be_an_instance_of(Kifu::Kifu)
+        end
+
         it "各指し手の名前に反映されている" do
           @merged[0].names.should eq(["sandmark", "asanebou"])
         end
