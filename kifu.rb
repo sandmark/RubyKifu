@@ -7,7 +7,8 @@ require "enumerator"
 
 module Kifu
   class Kifu
-    attr_reader :name, :footer
+    attr_accessor :name
+    attr_reader :footer
     ValidKifuPattern = "手数----指手---------消費時間--"
     HeaderPattern    = /^#/
     SplitPattern     = ValidKifuPattern # ここから指し手
@@ -37,6 +38,7 @@ module Kifu
         raise RuntimeError, "正式な柿木形式棋譜ファイルではありません"
 
       else
+        @name = name
         parse NKF.nkf('-w', kifu) # 新たに解析する
       end
     end
@@ -128,14 +130,22 @@ module Kifu
     end
 
     def to_s
+      _to_s :to_s
+    end
+
+    def to_s_with_names
+      _to_s :to_s_with_names_and_comments
+    end
+
+    def _to_s method # private
       buffer = []
       buffer.push @headers.join("\n")
       buffer.push ValidKifuPattern
-      buffer += @body.map{|sashite| sashite.to_s}
-      buffer.push @footer.to_s
+      buffer += @body.map{|sashite| sashite.__send__ method}
+      buffer.push @footer.__send__ method
 
       # to_s するときは改行コードを CRLF に固定
-      return buffer.join("\n").gsub(/\r/m, "").gsub(/\n/m, "\r\n") + "\r\n"
+      buffer.join("\n").gsub(/\r/m, "").gsub(/\n/m, "\r\n") + "\r\n"
     end
 
     def kifu
@@ -174,11 +184,11 @@ module Kifu
             queue += line
           elsif Sashite.sashite? line
             queue += line
-            @body << Sashite.new(queue)
+            @body << Sashite.new(queue, @name)
             queue = ""
           elsif Sashite.footer?(line)
             queue += line
-            @footer = Sashite.new(queue)
+            @footer = Sashite.new(queue, @name)
           end
         end
       end
@@ -241,6 +251,7 @@ module Kifu
         @prev_te         = args[:prev_te]
         @time_considered = args[:time_considered]
         @clock           = args[:clock]
+        @footer          = args[:footer]
       end
     end
 
@@ -267,7 +278,7 @@ module Kifu
                     :tesuu   => @tesuu,   :te       => @te,
                     :prev_te => @prev_te,
                     :time_considered => @time_considered,
-                    :clock   => @clock})
+                    :clock   => @clock, :footer => @footer})
     end
 
     def & another
@@ -317,7 +328,7 @@ module Kifu
     end
 
     def to_s_with_names_and_comments
-      return crlfize(comments_to_s(0, true)) + @footer if footer?
+      return crlfize(comments_to_s((0..-1), true)) + @footer if footer?
 
       result = comments_to_s((0..-1), true)
       result += te_to_s

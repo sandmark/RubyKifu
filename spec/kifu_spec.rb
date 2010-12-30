@@ -131,7 +131,9 @@ describe Kifu::Kifu do
 
     describe "マージ関連: " do
       before :each do
-        @merged = @sandmark.merge @asanebou
+        @sandmark_m = Kifu::Kifu.new File.read("sandmark.kif"), "sandmark"
+        @asanebou_m = Kifu::Kifu.new File.read("asanebou.kif"), "asanebou"
+        @merged = @sandmark_m.merge @asanebou_m
       end
 
       describe "Kifu#merge: " do
@@ -154,8 +156,12 @@ describe Kifu::Kifu do
           end
         end
 
-        pending "Kifu#to_s で指し手がマージされていること" do
-          @merged.to_s
+        it "各指し手の名前に反映されている" do
+          @merged[0].names.should eq(["sandmark", "asanebou"])
+        end
+
+        it "Kifu#to_s_with_names_and_comments で指し手がマージされていること" do
+          @merged.to_s_with_names.should eq(File.read("merged.kif"))
         end
       end
     end
@@ -462,6 +468,29 @@ describe Kifu::Sashite do
 
         @commented = Kifu::Sashite.new @commented_raw, "commented"
         @nocommented = Kifu::Sashite.new @nocommented_raw, "nocommented"
+
+        @footer_sandmark_raw = "まで76手で後手の勝ち"
+        @footer_asanebou_raw = "*これで投了となりました。\r\n*\r\n*本局は４３手目の４５桂が、さんどさんの悪手であったと思います。\r\n*あそこで５５金と角を取られていたら、おそらくこちらの負けでした。\r\n*\r\n*幸運があり、勝負に勝つことができました。\r\n*さんどさんありがとうございました！\r\n*\r\n*また対戦しましょうね！\r\nまで76手で後手の勝ち"
+
+        @footer_sandmark = Kifu::Sashite.new @footer_sandmark_raw, "sandmark"
+        @footer_asanebou = Kifu::Sashite.new @footer_asanebou_raw, "asanebou"
+        @footer_merged = @footer_sandmark.merge @footer_asanebou
+        @footer_merged_raw = "*asanebou: これで投了となりました。\r\n*asanebou: \r\n*asanebou: 本局は４３手目の４５桂が、さんどさんの悪手であったと思います。\r\n*asanebou: あそこで５５金と角を取られていたら、おそらくこちらの負けでした。\r\n*asanebou: \r\n*asanebou: 幸運があり、勝負に勝つことができました。\r\n*asanebou: さんどさんありがとうございました！\r\n*asanebou: \r\n*asanebou: また対戦しましょうね！\r\nまで76手で後手の勝ち"
+      end
+
+      describe "フッタ関係: " do
+        it "名前を保持できる" do
+          @footer_merged.names.should eq(["sandmark", "asanebou"])
+        end
+
+        it "to_s できる" do
+          @footer_merged.to_s.should eq(@footer_sandmark_raw)
+        end
+
+        it "to_s_with_names_and_comments できる" do
+          @footer_merged.to_s_with_names_and_comments.
+            should eq(@footer_merged_raw)
+        end
       end
 
       describe "Sashite#commented?: " do
@@ -482,6 +511,11 @@ describe Kifu::Sashite do
         it "名前を複数保有している" do
           @first.names.should be_an_instance_of(Array)
           @first.names.first.should eq("sandmark")
+        end
+
+        it "マージされた場合、名前を継承している" do
+          @merged.names[0].should eq("sandmark")
+          @merged.names[1].should eq("asanebou")
         end
 
         it "書き込みはできない" do
