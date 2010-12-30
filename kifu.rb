@@ -43,6 +43,11 @@ module Kifu
       end
     end
 
+    def merge_comment! sashite
+      raise RuntimeError, "指し手オブジェクトではありません" if sashite.class != Sashite
+      @body[sashite.tesuu-1] = @body[sashite.tesuu-1].merge sashite
+    end
+
     def merge another
       if not another.class == self.class
         raise RuntimeError, "棋譜オブジェクトではありません"
@@ -202,7 +207,7 @@ module Kifu
       string.strip.gsub(/　+$/, '')
     end
 
-    private :parse, :zenkaku_strip
+    private :parse, :zenkaku_strip, :_to_s
   end
 
   class Sashite
@@ -248,14 +253,20 @@ module Kifu
         @comment = @comment.join("\n")
         @comments.push @comment
       else # args 処理
-        @names           = args[:names]
-        @comments        = args[:comments].map{|c| c.gsub(/\r/, "")}
-        @tesuu           = args[:tesuu]
-        @te              = args[:te]
-        @prev_te         = args[:prev_te]
-        @time_considered = args[:time_considered]
-        @clock           = args[:clock]
-        @footer          = args[:footer]
+        if args[:merge] # マージ用の一時オブジェクトの場合
+          @tesuu = args[:tesuu]
+          @names = [args[:name]]
+          @comments = [args[:comment]]
+        else
+          @names           = args[:names]
+          @comments        = args[:comments].map{|c| c.gsub(/\r/, "")}
+          @tesuu           = args[:tesuu]
+          @te              = args[:te]
+          @prev_te         = args[:prev_te]
+          @time_considered = args[:time_considered]
+          @clock           = args[:clock]
+          @footer          = args[:footer]
+        end
       end
     end
 
