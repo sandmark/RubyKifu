@@ -31,6 +31,9 @@ describe Kifu::Kifu do
       @asanebou = Kifu::Kifu.new @asanebou_kifu, "asanebou"
       @started_at = DateTime.new(2010,12,11,23,31,33)
       @sandmark_first = Kifu::Sashite.new "*あさねぼうさんとの対局ぱーと2！\r\n*先手番もらいました。ちなみに天下一将棋会ごっこも兼ねていたようです。\r\n   1 ５六歩(57)   ( 0:11/00:00:11)"
+
+      @ham_kifu = File.read('ham.kif')
+      @ham = Kifu::Kifu.new @ham_kifu, "ham"
     end
 
     describe "Kifu#at: " do
@@ -127,8 +130,33 @@ describe Kifu::Kifu do
     end
 
     describe "マージ関連: " do
+      before :each do
+        @merged = @sandmark.merge @asanebou
+      end
+
       describe "Kifu#merge: " do
-        pending "棋譜を合成し、新たな棋譜オブジェクトを返す"
+        it "棋譜を合成し、新たな棋譜オブジェクトを返す" do
+          @merged.should be_an_instance_of(Kifu::Kifu)
+        end
+
+        it "同じ棋譜でなければ例外を投げる" do
+          lambda{@sandmark.merge(@ham)}.should raise_error(RuntimeError)
+        end
+
+        it "棋譜オブジェクトでなければ例外を投げる" do
+          lambda{@sandmark.merge("string")}.should raise_error
+        end
+
+        it "ヘッダは呼び出し元を保持する" do
+          ["header", "started_at",
+           "kisen", "teai", "sente", "gote"].each do |method|
+            @merged.__send__(method).should eq(@sandmark.__send__(method))
+          end
+        end
+
+        pending "Kifu#to_s で指し手がマージされていること" do
+          @merged.to_s
+        end
       end
     end
   end
@@ -281,31 +309,69 @@ describe Kifu::Sashite do
       @thirty_seven_raw = "  37 ３二銀成(41) ( 0:05/00:01:38)"
 
       @footer_raw = "*これで投了となりました。\r\n*\r\n*本局は４３手目の４５桂が、さんどさんの悪手であったと思います。\r\n*あそこで５５金と角を取られていたら、おそらくこちらの負けでした。\r\n*\r\n*幸運があり、勝負に勝つことができました。\r\n*さんどさんありがとうございました！\r\n*\r\n*また対戦しましょうね！\r\nまで76手で後手の勝ち"
+      @footer_named = "*no name: これで投了となりました。\r\n*no name: \r\n*no name: 本局は４３手目の４５桂が、さんどさんの悪手であったと思います。\r\n*no name: あそこで５５金と角を取られていたら、おそらくこちらの負けでした。\r\n*no name: \r\n*no name: 幸運があり、勝負に勝つことができました。\r\n*no name: さんどさんありがとうございました！\r\n*no name: \r\n*no name: また対戦しましょうね！\r\nまで76手で後手の勝ち"
       @footer = Kifu::Sashite.new @footer_raw
     end
 
-    describe "Sashite#to_s: " do
-      it "指し手を柿木棋譜形式にして返す" do
-        @first.to_s.should eq(@first_raw)
-        @second.to_s.should eq(@second_raw)
-        @thirty_seven.to_s.should eq(@thirty_seven_raw)
-        @footer.to_s.should eq(@footer_raw)
+    describe "Sashite#to_s関連: " do
+      before :each do
+        @sandmark4_raw = "*この辺で「中飛車！有効！」などとチャット欄に打ち込んでは2人ではしゃいでいました。\r\n   4 ５二飛(82)   ( 0:03/00:00:25)"
+        @asanebou4_raw = "   4 ５二飛(82)   ( 0:03/00:00:25)"
+
+        @sandmark4 = Kifu::Sashite.new @sandmark4_raw, "sandmark"
+        @asanebou4 = Kifu::Sashite.new @asanebou4_raw, "asanebou"
+        @merged    = @sandmark4.merge @asanebou4
+        @merged_to_s_nc_result = "*sandmark: この辺で「中飛車！有効！」などとチャット欄に打ち込んでは2人ではしゃいでいました。\r\n   4 ５二飛(82)   ( 0:03/00:00:25)"
+
+        @sandmark1_raw = "*あさねぼうさんとの対局ぱーと2！\r\n*先手番もらいました。ちなみに天下一将棋会ごっこも兼ねていたようです。\r\n   1 ５六歩(57)   ( 0:11/00:00:11)"
+        @asanebou1_raw = "*さんどさんと対戦だ！\r\n*先手を取られてしまったので、たぶん中飛車でありましょう。\r\n   1 ５六歩(57)   ( 0:11/00:00:11)"
+
+        @sandmark1 = Kifu::Sashite.new @sandmark1_raw, "sandmark"
+        @asanebou1 = Kifu::Sashite.new @asanebou1_raw, "asanebou"
+        @merged2   = @sandmark1.merge @asanebou1
+        @merged2_to_s_nc_result = "*sandmark: あさねぼうさんとの対局ぱーと2！\r\n*sandmark: 先手番もらいました。ちなみに天下一将棋会ごっこも兼ねていたようです。\r\n*asanebou: さんどさんと対戦だ！\r\n*asanebou: 先手を取られてしまったので、たぶん中飛車でありましょう。\r\n   1 ５六歩(57)   ( 0:11/00:00:11)"
       end
-    end
 
-    describe "Sashite#to_s_without_comment" do
-      it "指し手をコメント無しで返す" do
-        @first.to_s_without_comment.should eq("   1 ５六歩(57)   ( 0:11/00:00:11)")
-        @second.to_s_without_comment.should eq(@second_raw)
-        @thirty_seven.to_s_without_comment.should eq(@thirty_seven_raw)
+      describe "Sashite#to_s: " do
+        it "指し手を柿木棋譜形式にして返す" do
+          @first.to_s.should eq(@first_raw)
+          @second.to_s.should eq(@second_raw)
+          @thirty_seven.to_s.should eq(@thirty_seven_raw)
+          @footer.to_s.should eq(@footer_raw)
+        end
+      end
 
-        @footer.to_s_without_comment.should eq("まで76手で後手の勝ち")
+      describe "Sashite#to_s_without_comments" do
+        it "指し手をコメント無しで返す" do
+          @first.to_s_without_comments.should eq("   1 ５六歩(57)   ( 0:11/00:00:11)")
+          @second.to_s_without_comments.should eq(@second_raw)
+          @thirty_seven.to_s_without_comments.should eq(@thirty_seven_raw)
+          
+          @footer.to_s_without_comments.should eq("まで76手で後手の勝ち")
+          @merged.to_s_without_comments.should eq("   4 ５二飛(82)   ( 0:03/00:00:25)")
+        end
+      end
+
+      describe "Sashite#to_s_with_names_and_comments" do
+        it "すべてのコメントを名前付きで結合して返す" do
+          @merged2.to_s_with_names_and_comments.
+            should eq(@merged2_to_s_nc_result)
+        end
+
+        it "片方のみのコメントでも返す" do
+          @merged.to_s_with_names_and_comments.should eq(@merged_to_s_nc_result)
+        end
+
+        it "コメントがひとつでも正常に返す" do
+          @footer.to_s_with_names_and_comments.should eq(@footer_named)
+        end
       end
     end
 
     describe "Sashite#commented?" do
       it "コメントされている指し手なら true を返す" do
         @first.commented?.should be_true
+        @footer.commented?.should be_true
       end
 
       it "コメントされていない指し手なら false を返す" do
@@ -390,6 +456,26 @@ describe Kifu::Sashite do
 
         @merged = @sandmark1.merge(@asanebou1)
         @merged_twice = @merged.merge(@merge1)
+
+        @commented_raw = "*この辺で「中飛車！有効！」などとチャット欄に打ち込んでは2人ではしゃいでいました。\r\n   4 ５二飛(82)   ( 0:03/00:00:25)"
+        @nocommented_raw = "   4 ５二飛(82)   ( 0:03/00:00:25)"
+
+        @commented = Kifu::Sashite.new @commented_raw, "commented"
+        @nocommented = Kifu::Sashite.new @nocommented_raw, "nocommented"
+      end
+
+      describe "Sashite#commented?: " do
+        it "誰かのコメントがあれば true を返す" do
+          @commented.merge(@nocommented).commented?.should be_true
+          @nocommented.merge(@commented).commented?.should be_true
+        end
+      end
+
+      describe "Sashite#count_of_comment: " do
+        it "コメントの数を返す" do
+          @commented.count_of_comment.should_not be_zero
+          @nocommented.count_of_comment.should be_zero
+        end
       end
 
       describe "Sashite#names: " do
@@ -411,6 +497,10 @@ describe Kifu::Sashite do
       end
 
       describe "Sashite#merge: " do
+        it "指し手オブジェクトでなければ例外を投げる" do
+          lambda{@merged.merge("string")}.should raise_error
+        end
+
         it "他の指し手と融合することができる" do
           @merged.should be_an_instance_of(Kifu::Sashite)
           @merged_twice.should be_an_instance_of(Kifu::Sashite)

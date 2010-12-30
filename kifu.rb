@@ -3,9 +3,11 @@
 $KCODE='u'
 require 'nkf'
 require 'date'
+require "enumerator"
 
 module Kifu
   class Kifu
+    attr_reader :name, :footer
     ValidKifuPattern = "手数----指手---------消費時間--"
     HeaderPattern    = /^#/
     SplitPattern     = ValidKifuPattern # ここから指し手
@@ -21,12 +23,39 @@ module Kifu
       end
     end
 
-    def initialize kifu, name=''
-      if not Kifu.valid? kifu
+    def initialize kifu, name='', headers=[], attributes={}, body=[], footer=nil
+      # merge 判定
+      if (not headers.empty? or not attributes.empty? or
+          not body.empty? or not footer.nil?)
+        @name   = name
+        @headers = headers
+        @attributes = attributes
+        @body   = body.dup
+        @footer = footer
+
+      elsif not Kifu.valid? kifu
         raise RuntimeError, "正式な柿木形式棋譜ファイルではありません"
+
+      else
+        parse NKF.nkf('-w', kifu) # 新たに解析する
+      end
+    end
+
+    def merge another
+      if not another.class == self.class
+        raise RuntimeError, "棋譜オブジェクトではありません"
+      elsif not same? another
+        raise RuntimeError, "同じ棋譜ではありません"
       end
 
-      parse NKF.nkf('-w', kifu)
+      # ヘッダは呼び出し元を保持
+      headers = @headers.dup
+      attributes = @attributes.dup
+      body   = @body.enum_with_index.map{|sashite, index|
+        sashite.merge another[index]}
+      footer = @footer.merge another.footer
+
+      Kifu.new nil, self.name, headers, attributes, body, footer
     end
 
     def started_at
@@ -228,6 +257,10 @@ module Kifu
     end
 
     def merge another
+      if not another.class == self.class
+        raise RuntimeError, "指し手オブジェクトではありません"
+      end
+
       Sashite.new(nil, nil, {
                     :names   => @names + another.names,
                     :comments => @comments + another.comments,
@@ -274,32 +307,62 @@ module Kifu
       string.gsub(/\n/m, "\r\n")
     end
 
+    # to_s は最初のコメントを名前無し + 指し手で返す
     def to_s
-      _to_s true
+      return crlfize(comments_to_s(0, false)) + @footer if footer?
+
+      result = comments_to_s 0, false
+      result += te_to_s
+      crlfize result
     end
 
-    def to_s_without_comment
-      _to_s
+    def to_s_with_names_and_comments
+      return crlfize(comments_to_s(0, true)) + @footer if footer?
+
+      result = comments_to_s((0..-1), true)
+      result += te_to_s
+      crlfize result
+    end
+
+    def to_s_without_comments
+      return crlfize(@footer) if footer?
+      te_to_s
+    end
+
+    def comment_to_s pos, with_name # private
+      @comments[pos].split("\n").map{ |comment|
+        if with_name
+          "*#{@names[pos]}: #{comment}"
+        else
+          "*#{comment}"
+        end
+      }.join("\n")
+    end
+
+    def comments_to_s range, with_name # private
+      result = ""
+      if range.class == Range
+        result = 
+          @comments[range].enum_with_index.map{ |c, pos|
+            comment_to_s pos, with_name
+          }.select{|v| not v.empty?}.join("\n")
+      else
+        result = comment_to_s range, with_name
+      end
+      result += "\n" if not result.empty?
+      return result
     end
 
     def commented?
-      not @comment.empty?
+      not count_of_comment.zero?
     end
 
-    def _to_s with_comment=nil
-      result = ""
-      if with_comment
-        if commented?
-          result += @comment.split(/\n/).map{|l| '*'+l}.join("\n") + "\n"
-        end
-      end
+    def count_of_comment
+      @comments.inject(0){|count, comment| comment.empty? ? count+0 : count+1}
+    end
 
-      if footer?
-        result += @footer
-        return crlfize result
-      end
-
-      result += sprintf("%4d", @tesuu) + " "
+    def te_to_s
+      result = sprintf("%4d", @tesuu) + " "
 
       te  = @te.to_s
       te += "(#{@prev_te})" if @prev_te
@@ -313,7 +376,8 @@ module Kifu
       return crlfize result
     end
 
-    private :_to_s, :crlfize, :comments_with_names_within
+    private :te_to_s, :crlfize, :comments_with_names_within,
+            :comment_to_s, :comments_to_s
   end
 end
 
