@@ -5,8 +5,15 @@
 === Kifu::Kifu
 * 主な機能
   * Kifu.valid? で柿木形式かどうか確かめられる
-  * Kifu.same? で同じ棋譜かどうか確かめられる
-  * Kifu#merge(Kifuインスタンス) で棋譜の合成ができる (Kifu.same? が成立する場合のみ)
+  * Kifu.new(棋譜, [名前]) とすることで棋譜の名前を設定できます
+    ここで言う「名前」というのは棋譜そのものの名前のことではなく、
+    棋譜の作者、アップロード者などのことを指します
+    マージするときに関係してきます
+    また、ファイルからの読み込みはしないので、 File.read などを使って読ませてください
+  * Kifu#same? で同じ棋譜かどうか確かめられる
+  * Kifu#strict_same? でさらに厳重にチェック
+  * Kifu#merge(Kifuインスタンス) で棋譜の合成ができる (Kifu#same? が成立する場合のみ)
+  * Kifu#& は↑のエイリアス
   * Kifu#started_at で開始日時が読み出せる
   * Kifu#kisen で棋戦情報、
   * Kifu#teai で手合割、
@@ -14,9 +21,15 @@
   * Kifu#gote で後手プレイヤの名前
   * などが返ってくる。（ほか足りないヘッダありましたらメッセージ残してください。）
   * Kifu#[] で Sashite オブジェクトが返る
+  * Kifu#merge_comment!(Sashite) でコメントの追加ができる（破壊的）
+  * Kifu#merge_comment （↑の非破壊的メソッド）はありません
+  * Kifu#to_s で棋譜を吐く
+  * Kifu#to_s_with_names でコメントに名前を付与して棋譜を吐く
 
 == Kifu::Sashite
 * 主な機能
-  * 指した手（５六歩(57)など）を Sashite#te で読み出せる
-  * 消費時間も Sashite#clock に記憶している
-  * 指し手のコメントも Sashite#comment で読み出せる。無い場合は nil を返す。
+  * バックエンドクラスなので、肥大化はしてますが把握する必要性は薄いかも
+  * Kifu#merge_comment! に渡す Sashite オブジェクトを作るには:
+    * Sashite.new(nil, nil, :merge => true, :tesuu => 1,
+                            :name => "no name", :comment => "hogefuga")
+      のようにしてください
