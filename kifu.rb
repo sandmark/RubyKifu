@@ -150,8 +150,8 @@ module Kifu
       buffer = []
       buffer.push @headers.join("\n")
       buffer.push ValidKifuPattern
-      buffer += @body.map{|sashite| sashite.__send__ method}
-      buffer.push @footer.__send__ method
+      buffer += @body.map{ |sashite| sashite.__send__ method }
+      buffer.push @footer.__send__ method if @footer.class == Sashite
 
       # to_s するときは改行コードを CRLF に固定
       buffer.join("\n").gsub(/\r/m, "").gsub(/\n/m, "\r\n") + "\r\n"
@@ -212,7 +212,7 @@ module Kifu
 
   class Sashite
     attr_reader :tesuu, :te, :prev_te, :time_considered, :clock
-    SashitePattern = /^\s+?(\d+?)\s(.+?)(\(\d\d\))?\s+?\(\s(.*?)\)/
+    SashitePattern = /^\s*?(\d+?)\s(.+?)(\(\d\d\))?\s+?\(\s(.*?)\)/
     CommentPattern = /^\*(.*)/
     ToryoPattern   = /^まで.*/
 

@@ -34,6 +34,9 @@ describe Kifu::Kifu do
 
       @ham_kifu = File.read('ham.kif')
       @ham = Kifu::Kifu.new @ham_kifu, "ham"
+
+      @to_s_with_names_test_raw = File.read('to_s_with_names_test.kif')
+      @to_s_with_names_test = Kifu::Kifu.new @to_s_with_names_test_raw, "to_s"
     end
 
     describe "Kifu#at: " do
@@ -126,6 +129,13 @@ describe Kifu::Kifu do
       it "読み込んだ棋譜と同一のものを返す" do
         @sandmark.to_s.should eq(@sandmark_kifu)
         @asanebou.to_s.should eq(@asanebou_kifu)
+      end
+    end
+
+    describe "Kifu#to_s_with_names: " do
+      it "読み込んだ棋譜を名前付きで返す" do
+        @to_s_with_names_test.to_s_with_names.
+          should eq(File.read("to_s_with_names_test.out.kif"))
       end
     end
 
