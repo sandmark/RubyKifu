@@ -45,7 +45,16 @@ module Kifu
 
     def merge_comment! sashite
       raise RuntimeError, "指し手オブジェクトではありません" if sashite.class != Sashite
-      @body[sashite.tesuu-1] = @body[sashite.tesuu-1].merge sashite
+      raise RuntimeError, "手数が超過しています" if sashite.tesuu > (@body.length+1)
+      if @body.length == sashite.tesuu # フッタの可能性チェック
+        if @footer.class == Sashite
+          @footer = @footer.merge sashite
+        else
+          @footer = sashite
+        end
+      else
+        @body[sashite.tesuu] = @body[sashite.tesuu].merge sashite
+      end
     end
 
     def merge another

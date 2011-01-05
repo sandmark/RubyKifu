@@ -190,8 +190,8 @@ describe Kifu::Kifu do
 
         it "棋譜に手数を指定してマージできる（破壊的）" do
           @merged.merge_comment! @new_comment
-          @merged[11].to_s_with_names_and_comments.
-            should eq("*sandmark: 穴熊かどうかを打診する損のない手だと思っていましたが…\r\n*nanashi: コメントですよ\r\n  12 ９四歩(93)   ( 0:03/00:01:01)")
+          @merged[12].to_s_with_names_and_comments.
+            should eq("*nanashi: コメントですよ\r\n  13 ２八玉(38)   ( 0:02/00:00:37)")
         end
 
         it "一時オブジェクトでもマージできる" do
