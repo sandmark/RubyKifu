@@ -648,3 +648,20 @@ describe Kifu::Sashite do
     end
   end
 end
+
+describe "まるたさんの棋譜: " do
+  before :each do
+    @maruta1_raw = File.read "maruta1.kif"
+    @maruta1_raw_expected = File.read "maruta1_expected.kif"
+    @maruta1     = Kifu::Kifu.new @maruta1_raw, "maruta"
+    @maruta1_1   = "   1 ７六歩(77)   (00:00/00:00:00)"
+  end
+
+  it "棋譜を相互変換できること" do
+    @maruta1.to_s.should eq(@maruta1_raw_expected)
+  end
+
+  it "指し手を識別できること" do
+    Kifu::Sashite.sashite?(@maruta1_1).should be_true
+  end
+end

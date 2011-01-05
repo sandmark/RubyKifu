@@ -221,7 +221,7 @@ module Kifu
 
   class Sashite
     attr_reader :tesuu, :te, :prev_te, :time_considered, :clock
-    SashitePattern = /^\s*?(\d+?)\s(.+?)(\(\d\d\))?\s+?\(\s(.*?)\)/
+    SashitePattern = /^\s*?(\d+?)\s(.+?)(\(\d\d\))?\s+?\(\s?(.*?)\)/
     CommentPattern = /^\*(.*)/
     ToryoPattern   = /^まで.*/
 
