@@ -73,8 +73,17 @@ describe Kifu::Kifu do
     end
 
     describe "Kifu#same?: " do
+      before :each do
+        @same1 = Kifu::Kifu.new NKF.nkf("-w", File.read("same1.kif"))
+        @same2 = Kifu::Kifu.new NKF.nkf("-w", File.read("same2.kif"))
+      end
+      
       it "同じ棋譜なら（コメントやヘッダが違っても） true を返す" do
         @sandmark.same?(@asanebou).should be_true
+      end
+
+      it "指し手表記の違いがあっても true を返す" do
+        @same1.same?(@same2).should be_true
       end
     end
 

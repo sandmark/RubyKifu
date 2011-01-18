@@ -84,7 +84,11 @@ module Kifu
 
     def same? another
       each_with_index do |sashite, index|
-        return false if not sashite.te == another[index].te
+        if not sashite.te == another[index].te
+          unless sashite.te.match(/同/) or another[index].te.match(/同/)
+            return false
+          end
+        end
       end
       return true
     end
