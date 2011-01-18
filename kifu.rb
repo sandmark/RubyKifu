@@ -6,6 +6,18 @@ require 'date'
 require "enumerator"
 
 module Kifu
+  class KifuDifferenceError < Exception
+  end
+  
+  class InvalidKifuError < Exception
+  end
+  
+  class SashiteMismatchedError < Exception
+  end
+  
+  class SashiteExpiredError < Exception
+  end
+  
   class Kifu
     attr_accessor :name
     attr_reader :footer
@@ -35,7 +47,7 @@ module Kifu
         @footer = footer
 
       elsif not Kifu.valid? kifu
-        raise RuntimeError, "正式な柿木形式棋譜ファイルではありません"
+        raise InvalidKifuError, "正式な柿木形式棋譜ファイルではありません"
 
       else
         @name = name
@@ -44,8 +56,8 @@ module Kifu
     end
 
     def merge_comment! sashite
-      raise RuntimeError, "指し手オブジェクトではありません" if sashite.class != Sashite
-      raise RuntimeError, "手数が超過しています" if sashite.tesuu > (@body.length+1)
+      raise SashiteMismatchedError, "指し手オブジェクトではありません" if sashite.class != Sashite
+      raise SashiteExpiredError, "手数が超過しています" if sashite.tesuu > (@body.length+1)
       if @body.length == sashite.tesuu # フッタの可能性チェック
         if @footer.class == Sashite
           @footer = @footer.merge sashite
@@ -59,9 +71,9 @@ module Kifu
 
     def merge another
       if not another.class == self.class
-        raise RuntimeError, "棋譜オブジェクトではありません"
+        raise InvalidKifuError, "棋譜オブジェクトではありません"
       elsif not same? another
-        raise RuntimeError, "同じ棋譜ではありません"
+        raise KifuDifferenceError, "同じ棋譜ではありません"
       end
 
       # ヘッダは呼び出し元を保持
@@ -297,7 +309,7 @@ module Kifu
 
     def merge another
       if not another.class == self.class
-        raise RuntimeError, "指し手オブジェクトではありません"
+        raise SashiteMismatchedError, "指し手オブジェクトではありません"
       end
 
       Sashite.new(nil, nil, {

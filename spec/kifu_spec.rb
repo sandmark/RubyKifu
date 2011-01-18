@@ -16,9 +16,9 @@ describe Kifu::Kifu do
     end
 
     describe "Kifu.new: " do
-      it "Kifu.valid? が成立しなければ RuntimeError を投げる" do
+      it "Kifu.valid? が成立しなければ InvalidKifuError を投げる" do
         lambda {Kifu::Kifu.new(NKF.nkf('-w', File.read('invalid.kif')))}.
-          should raise_error(RuntimeError)
+          should raise_error(Kifu::InvalidKifuError)
       end
     end
   end
@@ -161,7 +161,7 @@ describe Kifu::Kifu do
         end
 
         it "同じ棋譜でなければ例外を投げる" do
-          lambda{@sandmark.merge(@ham)}.should raise_error(RuntimeError)
+          lambda{@sandmark.merge(@ham)}.should raise_error(Kifu::KifuDifferenceError)
         end
 
         it "棋譜オブジェクトでなければ例外を投げる" do
