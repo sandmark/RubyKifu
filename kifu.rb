@@ -81,7 +81,10 @@ module Kifu
       attributes = @attributes.dup
       body   = @body.enum_with_index.map{|sashite, index|
         sashite.merge another[index]}
-      footer = @footer.merge another.footer
+      footer = nil
+      if @footer.class == Sashite and another.footer.class == Sashite
+        footer = @footer.merge another.footer
+      end
 
       Kifu.new nil, self.name, headers, attributes, body, footer
     end
